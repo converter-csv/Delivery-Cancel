@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cancel Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F0F0F;--surface:#1A1A1A;--surface2:#222;
+  --border:#2E2E2E;--border2:#3A3A3A;
+  --text:#F0F0F0;--muted:#888;--hint:#555;
+  --accent:#FF4D00;--green:#22C55E;
+  --fp:#FF2D7E;--fp-dim:#1F0010;
+  --grab:#00C853;--grab-dim:#001A0A;
+  --shopee:#FF6633;--shopee-dim:#1F0A00;
+  --r:10px;--r-sm:6px;
+}
+.light{
+  --bg:#F5F4F0;--surface:#FFFFFF;--surface2:#F0EEE9;
+  --border:#E2DDD6;--border2:#C8C3BC;
+  --text:#1A1916;--muted:#7A7670;--hint:#B0AAA4;
+  --fp:#D70F64;--fp-dim:#FFF0F6;
+  --grab:#00963F;--grab-dim:#EDFBF3;
+  --shopee:#D94B1E;--shopee-dim:#FFF3F0;
+}
+body,button,input,select,textarea{transition:background 0.2s,color 0.2s,border-color 0.2s}
+body{font-family:'Geist',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 5rem}
+
+.header{width:100%;max-width:480px;display:flex;align-items:center;gap:12px;margin-bottom:2rem}
+.hicon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hicon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.htitle{font-size:16px;font-weight:600;letter-spacing:-0.01em}
+.hsub{font-size:12px;color:var(--muted);margin-top:1px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);width:100%;max-width:480px;overflow:hidden}
+.card+.card{margin-top:10px}
+
+.upload-zone{padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:background 0.15s}
+.upload-zone:hover,.upload-zone.drag{background:var(--surface2)}
+.upload-ring{width:56px;height:56px;border:1.5px dashed var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.upload-ring svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.utitle{font-size:14px;font-weight:500;margin-bottom:5px}
+.uhint{font-size:12px;color:var(--muted)}
+.uhint b{color:var(--accent);font-weight:500}
+.ptags{display:flex;gap:6px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.ptag{font-size:10px;font-weight:500;padding:3px 9px;border-radius:99px;letter-spacing:0.02em}
+.ptag-fp{background:var(--fp-dim);color:var(--fp);border:1px solid rgba(255,45,126,0.2)}
+.ptag-grab{background:var(--grab-dim);color:var(--grab);border:1px solid rgba(0,200,83,0.2)}
+.ptag-shopee{background:var(--shopee-dim);color:var(--shopee);border:1px solid rgba(255,102,51,0.2)}
+#fileInput{display:none}
+
+.preview-wrap{position:relative;background:#111;border-bottom:1px solid var(--border)}
+.preview-wrap img{width:100%;max-height:220px;object-fit:contain;display:block}
+.prm{position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.prm svg{width:12px;height:12px;stroke:#ccc;fill:none;stroke-width:2.5;stroke-linecap:round}
+
+.ai-bar{padding:10px 16px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.spinner{width:13px;height:13px;border:1.5px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.form-body{padding:16px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.s2{grid-column:1/-1}
+.field label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em}
+.field input,.field select,.field textarea{
+  font-family:'Geist',sans-serif;font-size:13px;color:var(--text);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:8px 10px;outline:none;
+  transition:border-color 0.15s,background 0.15s;width:100%
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--border2);background:#272727}
+.field input.aif,.field select.aif{border-color:#1C3820;background:#101A10}
+.light .field input.aif,.light .field select.aif{border-color:#A8D9BB;background:#F0FAF4}
+
+.theme-btn{
+  margin-left:auto;width:34px;height:34px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:border-color 0.15s,background 0.15s;flex-shrink:0
+}
+.theme-btn:hover{border-color:var(--border2)}
+.theme-btn svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.field select option{background:var(--surface2)}
+.field textarea{resize:vertical;min-height:58px}
+
+.pswrap{position:relative}
+.pswrap select{appearance:none;padding-right:28px}
+.pdot{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%;pointer-events:none;display:none}
+.pswrap.fp select{padding-left:24px}.pswrap.fp .pdot{display:block;background:var(--fp)}
+.pswrap.grab select{padding-left:24px}.pswrap.grab .pdot{display:block;background:var(--grab)}
+.pswrap.shopee select{padding-left:24px}.pswrap.shopee .pdot{display:block;background:var(--shopee)}
+
+.divider{height:1px;background:var(--border)}
+.actions{padding:12px 16px;display:flex;gap:8px}
+
+.btn-log{
+  flex:1;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);
+  padding:10px 16px;font-family:'Geist',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:opacity 0.15s
+}
+.btn-log:hover{opacity:0.88}
+.btn-log:disabled{opacity:0.35;cursor:default}
+.btn-log svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.btn-reset{
+  background:none;border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:10px 13px;font-family:'Geist',sans-serif;font-size:13px;
+  color:var(--muted);cursor:pointer;transition:border-color 0.15s,color 0.15s
+}
+.btn-reset:hover{border-color:var(--border2);color:var(--text)}
+.err{font-size:11px;color:#F87171;margin:0 16px 10px;display:none}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  padding:10px 16px;border-radius:var(--r);font-size:12px;font-weight:500;
+  display:flex;align-items:center;gap:8px;opacity:0;
+  transition:transform 0.25s ease,opacity 0.25s ease;
+  z-index:100;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.5)
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);width:100%;max-width:380px;padding:20px}
+.modal h3{font-size:14px;font-weight:600;margin-bottom:5px}
+.modal p{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+.mlabel{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;display:block;margin-bottom:5px}
+.modal input{
+  width:100%;font-family:'Geist Mono',monospace;font-size:11px;
+  border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;
+  outline:none;margin-bottom:12px;background:var(--surface2);color:var(--text)
+}
+.modal input:focus{border-color:var(--border2)}
+.mactions{display:flex;gap:8px;margin-top:4px}
+.msave{flex:1;background:var(--text);color:var(--bg);border:none;border-radius:var(--r-sm);padding:9px;font-family:'Geist',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.mcancel{background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 13px;font-family:'Geist',sans-serif;font-size:13px;cursor:pointer;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="hicon">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+  </div>
+  <div>
+    <div class="htitle">Cancel Log</div>
+    <div class="hsub">Record cancelled delivery orders</div>
+  </div>
+  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle theme">
+    <svg id="themeIcon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</div>
+
+<div class="card" id="uploadCard">
+  <div id="uploadZone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-ring">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <p class="utitle">Upload order screenshot</p>
+    <p class="uhint"><b>Click to browse</b> or drag & drop</p>
+    <div class="ptags">
+      <span class="ptag ptag-fp">Foodpanda</span>
+      <span class="ptag ptag-grab">GrabFood</span>
+      <span class="ptag ptag-shopee">ShopeeFood</span>
+    </div>
+  </div>
+
+  <div id="previewWrap" class="preview-wrap" style="display:none">
+    <img id="previewImg" alt="screenshot">
+    <button class="prm" onclick="resetForm()" aria-label="Remove">
+      <svg viewBox="0 0 12 12"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
+    </button>
+  </div>
+
+  <div id="aiBar" class="ai-bar" style="display:none">
+    <div class="spinner"></div>
+    <span id="aiMsg">Reading image with Claude…</span>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*">
+
+<div class="card" id="formCard" style="display:none">
+  <div class="form-body">
+    <div class="fgrid">
+
+      <div class="field">
+        <label>Platform</label>
+        <div class="pswrap" id="pswrap">
+          <div class="pdot"></div>
+          <select id="platform" onchange="updatePlatformStyle()">
+            <option value="">Select…</option>
+            <option>Foodpanda</option>
+            <option>GrabFood</option>
+            <option>ShopeeFood</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Order ID</label>
+        <input type="text" id="orderId" placeholder="e.g. GF-587">
+      </div>
+
+      <div class="field">
+        <label>Refund Amount (RM)</label>
+        <input type="number" id="amount" placeholder="0.00" step="0.01" min="0">
+      </div>
+
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="date">
+      </div>
+
+      <div class="field s2">
+        <label>Outlet</label>
+        <select id="outlet">
+          <option value="">Select outlet…</option>
+          <option>Ara Damansara</option>
+          <option>Bukit Raja</option>
+          <option>Connaught</option>
+          <option>Glenmarie</option>
+          <option>Kepong</option>
+          <option>Pandan Indah</option>
+          <option>Puchong</option>
+          <option>Seapark</option>
+          <option>Setapak</option>
+          <option>Sri Petaling</option>
+          <option>Sungei Wang</option>
+          <option>TSLAW</option>
+          <option>Kee.Corner</option>
+        </select>
+      </div>
+
+      <div class="field s2">
+        <label>Remarks <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--hint);font-size:10px">(optional)</span></label>
+        <textarea id="remarks" placeholder="Cancel reason, staff name, etc."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="err" id="formErr"></div>
+  <div class="divider"></div>
+  <div class="actions">
+    <button class="btn-reset" onclick="resetForm()">Reset</button>
+    <button class="btn-log" id="submitBtn" onclick="submitToSheet()">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      Log to Sheet
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="tdot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<div class="modal-overlay" id="settingsModal" style="display:none">
+  <div class="modal">
+    <h3>Settings</h3>
+    <p>Update URLs below if they change. Claude API key lives securely in the Cloudflare Worker.</p>
+    <span class="mlabel">Cloudflare Worker URL</span>
+    <input type="text" id="proxyInput" placeholder="https://your-worker.workers.dev">
+    <span class="mlabel">Google Apps Script URL</span>
+    <input type="text" id="sheetInput" placeholder="https://script.google.com/macros/s/…/exec">
+    <div class="mactions">
+      <button class="mcancel" onclick="closeSettings()">Cancel</button>
+      <button class="msave" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PROXY='https://deliverycancel.chongqinleong.workers.dev/';
+const DEFAULT_SHEET='https://script.google.com/macros/s/AKfycbwLio4fOloRH3me3PZ8VheK3yzOd7e8MZgQ48VLOFVDoqBNbFWusTxQMpwostwP5SkEkA/exec';
+
+let proxyUrl=localStorage.getItem('proxy_url')||DEFAULT_PROXY;
+let sheetUrl=localStorage.getItem('sheet_url')||DEFAULT_SHEET;
+let b64=null,mime=null;
+
+const sunIcon='<svg id="themeIcon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+const moonIcon='<svg id="themeIcon" viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
+function applyTheme(light){
+  document.body.classList.toggle('light',light);
+  document.getElementById('themeBtn').innerHTML=light?moonIcon:sunIcon;
+}
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  localStorage.setItem('theme',isLight?'light':'dark');
+  document.getElementById('themeBtn').innerHTML=isLight?moonIcon:sunIcon;
+}
+applyTheme(localStorage.getItem('theme')==='light');
+
+function todayStr(){return new Date().toLocaleDateString('en-CA');}
+document.getElementById('date').value=todayStr();
+
+const zone=document.getElementById('uploadZone');
+const fi=document.getElementById('fileInput');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>{if(e.target.files[0])handleFile(e.target.files[0]);});
+
+function handleFile(file){
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    mime=file.type||'image/jpeg';
+    b64=ev.target.result.split(',')[1];
+    document.getElementById('uploadZone').style.display='none';
+    document.getElementById('previewImg').src=ev.target.result;
+    document.getElementById('previewWrap').style.display='block';
+    document.getElementById('formCard').style.display='none';
+    await extractWithClaude();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function extractWithClaude(){
+  const bar=document.getElementById('aiBar');
+  const msg=document.getElementById('aiMsg');
+  bar.style.display='flex';
+
+  const prompt=`This photo shows a smartphone held by restaurant staff. A food delivery app is open on the phone screen showing a CANCELLED order. Read the phone screen text carefully.
+
+Platforms: Foodpanda, GrabFood, ShopeeFood.
+
+Return ONLY raw JSON, no markdown:
+- "platform": "Foodpanda","GrabFood","ShopeeFood", or "Other"
+- "order_id": ShopeeFood→long numeric ID under "Other Information" (e.g."3084721365554688530"), GrabFood→short code (e.g."GF-587"), Foodpanda→hash code (e.g."#1892-ci86-2619-umxn")
+- "refund_amount": number only, no RM:
+    GrabFood: Total=RM0.00 (cancelled), IGNORE it, use Subtotal value.
+    Foodpanda: use Subtotal value, not Total.
+    ShopeeFood: use Order Amount value, not Total or post-subsidy.
+- "date": YYYY-MM-DD if visible, else null
+
+Example: {"platform":"GrabFood","order_id":"GF-587","refund_amount":55.85,"date":null}`;
+
+  try{
+    const res=await fetch(proxyUrl,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({payload:{
+        model:'claude-sonnet-4-6',
+        max_tokens:300,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mime,data:b64}},
+          {type:'text',text:prompt}
+        ]}]
+      }})
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message);
+    const raw=data.content?.find(b=>b.type==='text')?.text||'{}';
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    populateFields(parsed);
+    msg.textContent='Details extracted — review and confirm.';
+  }catch(e){
+    msg.textContent='Extract failed: '+(e.message||'unknown')+' — fill in manually.';
+    document.getElementById('formCard').style.display='block';
+  }
+}
+
+function populateFields(d){
+  if(d.platform){document.getElementById('platform').value=d.platform;updatePlatformStyle();}
+  if(d.order_id){const el=document.getElementById('orderId');el.value=d.order_id;el.classList.add('aif');}
+  if(d.refund_amount){const el=document.getElementById('amount');el.value=parseFloat(d.refund_amount).toFixed(2);el.classList.add('aif');}
+  if(d.date)document.getElementById('date').value=d.date;
+  document.getElementById('formCard').style.display='block';
+}
+
+function updatePlatformStyle(){
+  const v=document.getElementById('platform').value;
+  const w=document.getElementById('pswrap');
+  w.className='pswrap';
+  if(v==='Foodpanda')w.classList.add('fp');
+  else if(v==='GrabFood')w.classList.add('grab');
+  else if(v==='ShopeeFood')w.classList.add('shopee');
+  document.getElementById('platform').classList.toggle('aif',!!v);
+}
+
+async function submitToSheet(){
+  const platform=document.getElementById('platform').value;
+  const orderId=document.getElementById('orderId').value.trim();
+  const amount=document.getElementById('amount').value;
+  const outlet=document.getElementById('outlet').value;
+  const date=document.getElementById('date').value;
+  const errEl=document.getElementById('formErr');
+
+  if(!platform||!orderId||!amount||!outlet||!date){
+    errEl.textContent='All fields except Remarks are required.';
+    errEl.style.display='block';return;
+  }
+  errEl.style.display='none';
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div style="width:13px;height:13px;border:1.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block"></div> Logging…';
+
+  const payload={
+    date,platform,outlet,
+    order_id:orderId,
+    refund_amount:parseFloat(amount).toFixed(2),
+    remarks:document.getElementById('remarks').value.trim()
+  };
+
+  try{
+    const res=await fetch(sheetUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    const txt=await res.text();
+    if(!res.ok)throw new Error(txt);
+    showToast(platform+' · '+orderId+' · RM'+parseFloat(amount).toFixed(2));
+    resetForm();
+  }catch(e){
+    errEl.textContent='Submit failed: '+(e.message||'check Apps Script URL');
+    errEl.style.display='block';
+  }
+
+  btn.disabled=false;
+  btn.innerHTML='<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Log to Sheet';
+}
+
+function resetForm(){
+  b64=null;mime=null;fi.value='';
+  document.getElementById('previewImg').src='';
+  document.getElementById('previewWrap').style.display='none';
+  document.getElementById('uploadZone').style.display='block';
+  document.getElementById('aiBar').style.display='none';
+  document.getElementById('formCard').style.display='none';
+  document.getElementById('formErr').style.display='none';
+  ['platform','orderId','amount','outlet','remarks'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.value='';el.classList.remove('aif');}
+  });
+  document.getElementById('date').value=todayStr();
+  document.getElementById('pswrap').className='pswrap';
+}
+
+function showToast(txt){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=txt;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function showApiModal(){showSettings();}
+function showSettings(){
+  document.getElementById('proxyInput').value=proxyUrl;
+  document.getElementById('sheetInput').value=sheetUrl;
+  document.getElementById('settingsModal').style.display='flex';
+}
+function closeSettings(){document.getElementById('settingsModal').style.display='none';}
+function saveSettings(){
+  proxyUrl=document.getElementById('proxyInput').value.trim()||DEFAULT_PROXY;
+  sheetUrl=document.getElementById('sheetInput').value.trim()||DEFAULT_SHEET;
+  localStorage.setItem('proxy_url',proxyUrl);
+  localStorage.setItem('sheet_url',sheetUrl);
+  closeSettings();
+  showToast('Settings saved');
+}
+</script>
+</body>
+</html>
