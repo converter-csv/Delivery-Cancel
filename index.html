@@ -66,6 +66,8 @@ body{font-family:'Geist',sans-serif;background:var(--bg);color:var(--text);min-h
 .field input.aif,.field select.aif{border-color:#A8D9BB;background:#F0FAF4}
 .field select option{background:var(--surface)}
 .field textarea{resize:vertical;min-height:58px}
+.field input[readonly]{background:var(--surface2);cursor:default}
+.field input[readonly].aif{background:#F0FAF4}
 
 .pswrap{position:relative}
 .pswrap select{appearance:none;padding-right:28px}
@@ -196,6 +198,11 @@ body{font-family:'Geist',sans-serif;background:var(--bg);color:var(--text);min-h
         <input type="date" id="date">
       </div>
 
+      <div class="field s2" id="subsidyWrap" style="display:none">
+        <label>Promotion Subsidy (RM) <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--hint);font-size:10px">(ShopeeFood — sign flipped)</span></label>
+        <input type="text" id="subsidy" readonly placeholder="auto-filled">
+      </div>
+
       <div class="field s2">
         <label>Outlet</label>
         <select id="outlet">
@@ -257,7 +264,7 @@ body{font-family:'Geist',sans-serif;background:var(--bg);color:var(--text);min-h
 
 <script>
 const DEFAULT_PROXY='https://deliverycancel.chongqinleong.workers.dev/';
-const DEFAULT_SHEET='https://script.google.com/macros/s/AKfycbxR8ojNX1tkXjAHn1ykG7002jTHXSbw0eHS4FDUCm5kHf9ovGlW5HAEetShjLUk4jfPfQ/exec';
+const DEFAULT_SHEET='https://script.google.com/macros/s/AKfycbzr3dWEWAfuScIUPYXxIcIpuEYhEzjpLhVk0AZY-eElP7tO3AeOc7OEg-w5Yxhzj5HPKA/exec';
 
 let proxyUrl=localStorage.getItem('proxy_url')||DEFAULT_PROXY;
 let sheetUrl=localStorage.getItem('sheet_url')||DEFAULT_SHEET;
@@ -303,9 +310,16 @@ Return ONLY raw JSON, no markdown:
     GrabFood: Total=RM0.00 (cancelled), IGNORE it, use Subtotal value.
     Foodpanda: use Subtotal value, not Total.
     ShopeeFood: use Order Amount value, not Total or post-subsidy.
+- "promotion_subsidy": ShopeeFood ONLY. Read the "Promotion Subsidy" line and FLIP the sign:
+    Screen shows "-RM6.30" → return 6.30 (positive)
+    Screen shows "+RM13.22" → return -13.22 (negative)
+    For Foodpanda or GrabFood → return null
 - "date": YYYY-MM-DD if visible, else null
 
-Example: {"platform":"GrabFood","order_id":"GF-587","refund_amount":55.85,"date":null}`;
+Examples:
+ShopeeFood with -subsidy: {"platform":"ShopeeFood","order_id":"3072045713381376675","refund_amount":24.69,"promotion_subsidy":6.30,"date":"2026-05-04"}
+ShopeeFood with +subsidy: {"platform":"ShopeeFood","order_id":"3069101764908544313","refund_amount":50.44,"promotion_subsidy":-13.22,"date":"2026-05-02"}
+GrabFood: {"platform":"GrabFood","order_id":"GF-587","refund_amount":55.85,"promotion_subsidy":null,"date":null}`;
 
   try{
     const res=await fetch(proxyUrl,{
@@ -337,6 +351,12 @@ function populateFields(d){
   if(d.order_id){const el=document.getElementById('orderId');el.value=d.order_id;el.classList.add('aif');}
   if(d.refund_amount){const el=document.getElementById('amount');el.value=parseFloat(d.refund_amount).toFixed(2);el.classList.add('aif');}
   if(d.date)document.getElementById('date').value=d.date;
+  if(d.promotion_subsidy!=null&&d.platform==='ShopeeFood'){
+    const el=document.getElementById('subsidy');
+    el.value=parseFloat(d.promotion_subsidy).toFixed(2);
+    el.classList.add('aif');
+    document.getElementById('subsidyWrap').style.display='block';
+  }
   document.getElementById('formCard').style.display='block';
 }
 
@@ -348,6 +368,10 @@ function updatePlatformStyle(){
   else if(v==='GrabFood')w.classList.add('grab');
   else if(v==='ShopeeFood')w.classList.add('shopee');
   document.getElementById('platform').classList.toggle('aif',!!v);
+  if(v!=='ShopeeFood'){
+    document.getElementById('subsidyWrap').style.display='none';
+    const el=document.getElementById('subsidy');el.value='';el.classList.remove('aif');
+  }
 }
 
 async function submitToSheet(){
@@ -372,6 +396,7 @@ async function submitToSheet(){
     date,platform,outlet,
     order_id:orderId,
     refund_amount:parseFloat(amount).toFixed(2),
+    promotion_subsidy:document.getElementById('subsidy').value.trim()||'',
     remarks:document.getElementById('remarks').value.trim()
   };
 
@@ -398,11 +423,12 @@ function resetForm(){
   document.getElementById('aiBar').style.display='none';
   document.getElementById('formCard').style.display='none';
   document.getElementById('formErr').style.display='none';
-  ['platform','orderId','amount','outlet','remarks'].forEach(id=>{
+  ['platform','orderId','amount','outlet','remarks','subsidy'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.value='';el.classList.remove('aif');}
   });
   document.getElementById('date').value=todayStr();
   document.getElementById('pswrap').className='pswrap';
+  document.getElementById('subsidyWrap').style.display='none';
 }
 
 function showToast(txt){
